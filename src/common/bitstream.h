@@ -301,28 +301,28 @@ public:
         }
     }
 
-	/**
-	 * Read the length of the following string from the bitstream as a big-endian number.
-	 *
-	 * PlanetSide packets mainly use length-prefaced strings, where the length is either one byte or two bytes.
-	 * If the length is less than 128, the first bit of the field is "on" and the length is the remaining seven bits.
-	 * If the length is 128 or greater, the first bit of the field is "off" and the length is the remaining fifteen bits.
-	 * In other words: 0 <= n < 128 is 1 byte, from 0x80 to 0xFF;
-	 * and, 128 <= n < 32767 is 2 bytes, from 0x0080 to 0x7FFF.
-	 *
-	 * @param bitStream the stream, with the current position at the length field
-	 * @return the length
-	 */
-	uint16_t readStringLength() {
-		uint16_t strLen = 0;
-		if (readBit()) {
-			readBits((uint8_t*)&strLen, 7);
-		}
-		else {
-			readBits((uint8_t*)&strLen, 15);
-		}
-		return strLen;
-	}
+    /**
+     * Read the length of the following string from the bitstream as a big-endian number.
+     *
+     * PlanetSide packets mainly use length-prefaced strings, where the length is either one byte or two bytes.
+     * If the length is less than 128, the first bit of the field is "on" and the length is the remaining seven bits.
+     * If the length is 128 or greater, the first bit of the field is "off" and the length is the remaining fifteen bits.
+     * In other words: 0 <= n < 128 is 1 byte, from 0x80 to 0xFF;
+     * and, 128 <= n < 32767 is 2 bytes, from 0x0080 to 0x7FFF.
+     *
+     * @param bitStream the stream, with the current position at the length field
+     * @return the length
+     */
+    uint16_t readStringLength() {
+        uint16_t strLen = 0;
+        if (readBit()) {
+            readBits((uint8_t*)&strLen, 7);
+        }
+        else {
+            readBits((uint8_t*)&strLen, 15);
+        }
+        return strLen;
+    }
 
     void read(std::string& str) {
 		uint16_t strLen = readStringLength();
@@ -381,27 +381,27 @@ public:
         }
     }
 
-	/**
-	 * Write the length of the following string into the bitstream as a big-endian number.
-	 *
-	 * Comments in readStringLength are still valid for this function.
-	 *
-	 * @param strLen the string's length
-	 */
-	void writeStringLength(size_t strLen) {
-		bool isShortString = (strLen < 128);
-		writeBit(isShortString);
-		if (isShortString) {
-			writeBits((uint8_t*)&strLen, 7);
-		}
-		else {
-			writeBits((uint8_t*)&strLen, 15);
-		}
-	}
+    /**
+     * Write the length of the following string into the bitstream as a big-endian number.
+     *
+     * Comments in readStringLength are still valid for this function.
+     *
+     * @param strLen the string's length
+     */
+    void writeStringLength(size_t strLen) {
+        bool isShortString = (strLen < 128);
+        writeBit(isShortString);
+        if (isShortString) {
+            writeBits((uint8_t*)&strLen, 7);
+        }
+        else {
+            writeBits((uint8_t*)&strLen, 15);
+        }
+    }
 
     void write(const std::string& str) {
         size_t strLen = str.length();
-		writeStringLength(strLen);
+        writeStringLength(strLen);
 
         alignPos();
 
@@ -410,7 +410,7 @@ public:
 
     void write(const std::wstring& str) {
         size_t strLen = str.length();
-		writeStringLength(strLen);
+        writeStringLength(strLen);
 
         alignPos();
 
