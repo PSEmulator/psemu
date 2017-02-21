@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #define BITS_TO_BYTES(bits) (((bits) + 7) / 8)
 
@@ -393,6 +394,30 @@ public:
         str.resize(strLen);
         readBytes((uint8_t*)str.data(), strLen * 2);
     }
+
+	void readQuantitizedFloat(float& data, const size_t numBits, const float max, const float min = 0.0f) {
+		long outBuf;
+		readBits((uint8_t*)&outBuf, numBits);
+		long field = static_cast<long>(outBuf);
+		float range = max - min;
+		if(range < -1.0f) {
+			throw std::invalid_argument("quantitized float range - min value must never exceed max");
+		}
+		else if(range == 0.0f || field == 0L) {
+			data = min;
+		}
+		else {
+			long fieldMax = (1 << numBits) - 1;
+			data = std::floor(static_cast<float>(field) * range / fieldMax + 0.5f);
+			if(data < 0.0f) {
+				data = 0.0f;
+			}
+			else if(data > range) {
+				data = range;
+			}
+			data += min;
+		}
+	}
 
     /**
      * Templated write functions.
