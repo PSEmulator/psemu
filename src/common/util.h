@@ -13,3 +13,5 @@ std::size_t getTimeNanoseconds();
 void utilSleep(size_t ms);
 
 std::vector<uint8_t> hexToBytes(std::string hexStr);
+
+const int compareFloatValues(const float a, const float b, const size_t error);

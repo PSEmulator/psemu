@@ -85,37 +85,38 @@ std::vector<uint8_t> hexToBytes(std::string hexStr) {
     Compare two float values for relative equality or the direction of inequality.
 	@param a the first float
 	@param b the second float
-	@param error the margin of difference between parameter a and parameter b
+	@param epsilon the margin of difference between parameter a and parameter b
 	@throw invalid_argument if error is greater than 4 * 1024 * 1024
 	@return a value representing the equality or inequality of the two input numbers
 */
-const int compareFloatValues(const float a, const float b, const size_t error) {
+const int compareFloatValues(const float a, const float b, const size_t epsilon) {
 	/*
 	A simple decimal comparison might involve subtraction, fabs, and the result being less than a smaller decimal.
-	The method used, however, converts the IEEE float values into integers that can be lexicographically ordered.
-	Error becomes a count of "the maximum number of lexico-floats allowed between lexico-a and lexico-b."
-	To avoid encountering a NaN value, error can not risk being too big.
+	This method converts the IEEE float values into lexicographically-ordered two's-complement integers.
+	If (float)a > (float)b then (int)a > (int)b; but, precision concerns are lessened.
+	The error becomes a count of "the maximum number of lexico-numbers allowed between lexico-a and lexico-b."
+	To avoid encountering a NaN value, error can not risk being too big, however.
 	*/
-	if(error >= 4194304) {
+	if(epsilon >= 4194304) {
 		throw std::invalid_argument("float comparison - error margin too big");
 	}
 
-	int aInt = *(int*)&a;
-	if(aInt < 0) {
-		aInt = 0x80000000 - aInt; //negative zero -> positive zero?
+	int aint = *(int*)&a;
+	if(aint < 0) {
+		aint = 0x80000000 - aint; //conform negative scale to lexicographic order
 	}
-	int bInt = *(int*)&b;
-	if(bInt < 0) {
-		bInt = 0x80000000 - bInt; //negative zero -> positive zero?
+	int bint = *(int*)&b;
+	if(bint < 0) {
+		bint = 0x80000000 - bint; //conform negative scale to lexicographic order
 	}
-	//borrows from Java's Comparator compare(T o1, T o2) model for return values.
-	if(std::abs(aInt - bInt) <= error) {
+	//borrows from Java's Comparator compare(T o1, T o2) model for return values
+	if(std::abs(aint - bint) <= epsilon) {
 		return 0;
 	}
-	else if(aInt + error < bInt) {
-		return -1;
+	else if(aint + epsilon < bint) {
+		return 1;
 	}
 	else {
-		return 1;
+		return -1;
 	}
 }

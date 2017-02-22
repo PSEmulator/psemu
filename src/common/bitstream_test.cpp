@@ -119,6 +119,44 @@ void testBitstreamReadBits() {
     }
 }
 
+void testBitstreamReadQuantitizedFloat() {
+	static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+		0x6C, 0x2D, 0x76, 0x55, 0x35, 0xCA, 0x16 //6C2D7 65535 CA16
+	});
+	BitStream bitstream(expectedBuf);
+
+	float x;
+	float y;
+	float z;
+	bitstream.readQuantitizedFloat(x, 20, 8192.0f);
+	bitstream.readQuantitizedFloat(y, 20, 8192.0f);
+	bitstream.readQuantitizedFloat(z, 16, 1024.0f);
+	assertEqual( compareFloatValues(x, 3674.85f, 100), 0);
+	assertEqual( compareFloatValues(y, 2726.79f, 100), 0);
+	assertEqual( compareFloatValues(z, 91.1576f, 100), 0);
+}
+
+void testBitstreamWriteQuantitizedFloat() {
+	static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+		0x6C, 0x2D, 0x76, 0x55, 0x35, 0xCA, 0x16 //6C2D7 65535 CA16
+	});
+	BitStream expected_bitstream(expectedBuf);
+	float x;
+	float y;
+	float z;
+	expected_bitstream.readQuantitizedFloat(x, 20, 8192.0f);
+	expected_bitstream.readQuantitizedFloat(y, 20, 8192.0f);
+	expected_bitstream.readQuantitizedFloat(z, 16, 1024.0f);
+
+	std::vector<uint8_t> bitstreamBuf;
+	BitStream test_bitstream(bitstreamBuf);
+	test_bitstream.writeQuantitizedFloat(x, 20, 8192.0f);
+	test_bitstream.writeQuantitizedFloat(y, 20, 8192.0f);
+	test_bitstream.writeQuantitizedFloat(z, 16, 1024.0f);
+
+	assertBuffersEqual(bitstreamBuf, expectedBuf);
+}
+
 void testBitstream() {
     testBitstreamWriteBitsBasic();
     testBitstreamWriteBits();
@@ -128,4 +166,7 @@ void testBitstream() {
     // TODO: Test mixed bits and bytes write/read
     // TODO: Test primitive write/read
     // TODO: Test string write/read
+
+	testBitstreamReadQuantitizedFloat();
+	testBitstreamWriteQuantitizedFloat();
 }

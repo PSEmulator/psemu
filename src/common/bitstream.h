@@ -395,19 +395,18 @@ public:
     }
 
 	void readQuantitizedFloat(float& data, const size_t numBits, const float max, const float min = 0.0f) {
-		long outBuf;
+		long outBuf = 0L;
 		readBits((uint8_t*)&outBuf, numBits);
-		long field = static_cast<long>(outBuf);
 		float range = max - min;
 		if(range < -0.0f) {
 			throw std::invalid_argument("quantitized float range - min value must never exceed max");
 		}
-		else if(range == 0.0f || field == 0L) {
+		else if(range == 0.0f || outBuf == 0L) {
 			data = min;
 		}
 		else {
 			long fieldMax = (1 << numBits) - 1;
-			data = field * range / fieldMax;
+			data = outBuf * range / fieldMax;
 			if(data < 0.0f) {
 				data = 0.0f;
 			}
@@ -471,7 +470,7 @@ public:
         writeBytes((uint8_t*)str.data(), strLen * 2);
     }
 
-	void writeQuantitizedFloat(float& data, const size_t numBits, const float max, const float min = 0.0f) {
+	void writeQuantitizedFloat(const float& data, const size_t numBits, const float max, const float min = 0.0f) {
 		if(data < min) {
 			throw std::invalid_argument("quantitized float range - data is less than min value");
 		}
@@ -486,7 +485,10 @@ public:
 		else {
 			long fieldMax = (1 << numBits) - 1;
 			inBuf = static_cast<long>((data - min) * fieldMax / range);
-			if(inBuf > fieldMax) {
+			if(inBuf < 0L) {
+				inBuf = 0L;
+			}
+			else if(inBuf > fieldMax) {
 				inBuf = fieldMax;
 			}
 		}
