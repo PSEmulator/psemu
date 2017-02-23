@@ -316,13 +316,13 @@ void BitStream::read(std::wstring& str) {
 
 void BitStream::readQuantitizedFloat(float& data, const size_t numBits, const float max, const float min) {
     int epsilon = 100;
-    long outBuf = 0L;
-    readBits((uint8_t*)&outBuf, numBits);
     float range = max - min;
     if(compareFloats(range, 0.0f, epsilon) < 0) {
         throw std::invalid_argument("quantitized float range - min value is greater than max value");
     }
-    else if(compareFloats(range, 0.0f, epsilon) == 0 || outBuf == 0L) {
+    long outBuf = 0L;
+    readBits((uint8_t*)&outBuf, numBits);
+    if(compareFloats(range, 0.0f, epsilon) == 0 || outBuf == 0L) {
         data = min;
     }
     else {

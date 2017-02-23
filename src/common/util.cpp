@@ -89,19 +89,20 @@ const int compareFloats(const float a, const float b, const size_t epsilon) {
         throw std::invalid_argument("float comparison - error margin too big");
     }
 
-    int aint = *(int*)&a;
+	int epsilon2 = *(int*)&epsilon;
+	int aint = *(int*)&a;
     if(aint < 0) {
         aint = 0x80000000 - aint; //conform negative scale to lexicographic order
     }
-    int bint = *(int*)&b;
+	int bint = *(int*)&b;
     if(bint < 0) {
         bint = 0x80000000 - bint; //conform negative scale to lexicographic order
     }
     //borrows from Java's Comparator compare(T o1, T o2) for return values
-    if(std::abs(aint - bint) <= epsilon) {
+    if(std::abs(aint - bint) <= epsilon2) {
         return 0;
     }
-    else if(aint + epsilon < bint) {
+    else if(aint + epsilon2 < bint) {
         return -1;
     }
     else {

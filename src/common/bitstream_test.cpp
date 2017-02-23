@@ -159,6 +159,50 @@ void testBitstreamWriteQuantitizedFloat() {
     assertBuffersEqual(bitstreamBuf, expectedBuf);
 }
 
+void testBitstreamReadQuantitizedFloatLimits() {
+	static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+		0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF //FFFF 0000 FFFF
+	});
+	BitStream bitstream(expectedBuf);
+
+	float a;
+	float b;
+	float c;
+	bitstream.readQuantitizedFloat(a, 16, 256.0f, -256.0f);
+	bitstream.readQuantitizedFloat(b, 16, 256.0f, -256.0f);
+	bitstream.readQuantitizedFloat(c, 16, 256.0f, -256.0f);
+	assertEqual(compareFloats(a, 256.0f, 100), 0);
+	assertEqual(compareFloats(b, -256.0f, 100), 0);
+	assertEqual(compareFloats(c, 256.0f, 100), 0);
+}
+
+void testBitstreamWriteQuantitizedFloatLimits() {
+	static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+		0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF //FFFF 0000 FFFF
+	});
+	BitStream test_bitstream(expectedBuf);
+
+	float a = 260.5f; //too high
+	float b = -260.5f; //too low
+	std::vector<uint8_t> bitstreamBuf;
+	BitStream bitstream(bitstreamBuf);
+	bitstream.writeQuantitizedFloat(a, 16, 256.0f, -256.0f);
+	bitstream.writeQuantitizedFloat(b, 16, 256.0f, -256.0f);
+	bitstream.writeQuantitizedFloat(a, 16, 256.0f, -256.0f);
+	assertBuffersEqual(bitstreamBuf, expectedBuf);
+	
+	bitstream.setPos(0); //rewind the stream
+	float ax;
+	float bx;
+	float cx;
+	bitstream.readQuantitizedFloat(ax, 16, 256.0f, -256.0f);
+	bitstream.readQuantitizedFloat(bx, 16, 256.0f, -256.0f);
+	bitstream.readQuantitizedFloat(cx, 16, 256.0f, -256.0f);
+	assertEqual(compareFloats(ax, 256.0f, 100), 0);
+	assertEqual(compareFloats(bx, -256.0f, 100), 0);
+	assertEqual(compareFloats(cx, 256.0f, 100), 0);
+}
+
 void testBitstream() {
     testBitstreamWriteBitsBasic();
     testBitstreamWriteBits();
@@ -171,4 +215,6 @@ void testBitstream() {
 
     testBitstreamReadQuantitizedFloat();
     testBitstreamWriteQuantitizedFloat();
+	testBitstreamReadQuantitizedFloatLimits();
+	testBitstreamWriteQuantitizedFloatLimits();
 }
