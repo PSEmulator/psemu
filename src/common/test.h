@@ -1,7 +1,5 @@
 #pragma once
 
-#include "util.h"
-
 #define assertBuffersEqual(actual, expected, ...) do {\
     if (actual != expected) {\
         std::cout << "Assert failed! File \"" << __FILE__ << "\" line " << __LINE__ << std::endl;\
