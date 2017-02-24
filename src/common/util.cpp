@@ -77,35 +77,22 @@ std::vector<uint8_t> hexToBytes(std::string hexStr) {
     return bytes;
 }
 
-const int compareFloats(const float a, const float b, const size_t epsilon) {
-    /*
-    A simple decimal comparison might involve subtraction, fabs, and the result being less than a smaller decimal.
-    This method converts the IEEE float values into lexicographically-ordered two's-complement integers.
-    If (float)a > (float)b then (int)a > (int)b; but, precision concerns are lessened.
-    The error becomes a count of "the maximum number of lexico-numbers allowed between equal lexico-a and lexico-b."
-    To avoid encountering a NaN value, error can not risk being too big, however.
-    */
-    if(epsilon >= 4194304) {
-        throw std::invalid_argument("float comparison - error margin too big");
-    }
-
-	int epsilon2 = *(int*)&epsilon;
-	int aint = *(int*)&a;
-    if(aint < 0) {
-        aint = 0x80000000 - aint; //conform negative scale to lexicographic order
-    }
-	int bint = *(int*)&b;
-    if(bint < 0) {
-        bint = 0x80000000 - bint; //conform negative scale to lexicographic order
-    }
-    //borrows from Java's Comparator compare(T o1, T o2) for return values
-    if(std::abs(aint - bint) <= epsilon2) {
+/**
+Basic double comparison test using std::fabs.
+May be repurposed for other numeric data types cautiously.
+Models return values after Java Comparator's compare(T o1, T o2).
+@param a the first number
+@param b the second number
+@param epsilon the minimal tolerable difference between a and b before they are no longer considered equal
+@return a negative integer, zero, or a positive integer as the first argument is <, ==, or > the second
+*/
+int compareDecimals(double a, double b, double epsilon) {
+    double epsilonFabs = std::fabs(epsilon);
+    if (std::fabs(a - b) < epsilonFabs) {
         return 0;
-    }
-    else if(aint + epsilon2 < bint) {
+    } else if (a + epsilonFabs < b) {
         return -1;
-    }
-    else {
+    } else {
         return 1;
     }
 }

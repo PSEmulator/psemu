@@ -19,7 +19,7 @@ public:
         READ_TOO_MUCH
     };
 
-    BitStream(std::vector<uint8_t>&);
+    BitStream(std::vector<uint8_t>& exisitingBuf);
 
     /**
      * @return The total number of bits in the buffer
@@ -59,12 +59,12 @@ public:
     /**
      * Sets the current stream pos.
      */
-    void setPos(size_t);
+    void setPos(size_t pos);
 
     /**
      * Moves the stream pos by some delta.
      */
-    void deltaPos(int32_t);
+    void deltaPos(int32_t delta);
 
     /**
      * Aligns the stream pos to the next highest byte boundary if necessary.
@@ -79,33 +79,33 @@ public:
     /**
      * Reads a number of bytes.
      */
-    void readBytes(uint8_t*, size_t, bool = false);
+    void readBytes(uint8_t* outBuf, size_t numBytes, bool peek = false);
 
     /**
      * @return The boolean value of the next bit in the stream
      */
-    bool readBit(bool = false);
+    bool readBit(bool peek = false);
 
     /**
      * Reads a number of bits.
      * NOTE: WILL clobber any existing data in the bytes that get written to
      */
-    void readBits(uint8_t*, size_t, bool = false);
+    void readBits(uint8_t* outBuf, size_t numBits, bool peek = false);
 
     /**
      * Writes a number of bytes.
      */
-    void writeBytes(const uint8_t*, size_t);
+    void writeBytes(const uint8_t* data, size_t numBytes);
 
     /**
      * Writes a boolean value as a single bit.
      */
-    void writeBit(bool);
+    void writeBit(bool value);
 
     /**
      * Writes a number of bits.
      */
-    void writeBits(const uint8_t*, size_t);
+    void writeBits(const uint8_t* data, size_t numBits);
 
     /**
     * Templated read functions.
@@ -126,19 +126,21 @@ public:
 
     uint16_t readStringLength();
 
-    void read(std::string&);
+    void read(std::string& str);
 
-    void read(std::wstring&);
+    void read(std::wstring& str);
 
     /**
-    Read from buffer a float value as an integer with a 0-max range as a ratio to the float's min-max range.
-    @param data the float value to write to
+    Read from buffer a double value within a min-max float range as a value in a 0-[max] integer range.
+    @param data the double value to write to
     @param numBits the number of bits to be occupied in the buffer, the max converted integer value
     @param max the maximum float value
     @param min the minimum float value, defaulting to 0.0f
+    @param epsilon a comparable tolerable difference between decimal numbers, defaulting to 0.001
     @throw invalid_argument if min is greater than max
+    @throw invalid_argument if the number of bits is zero
     */
-    void readQuantitizedFloat(float&, const size_t, const float, const float = 0.0f);
+    void readQuantitizedDouble(double& data, size_t numBits, float max, float min = 0.0f, double epsilon = 0.001);
 
     /**
      * Templated write functions.
@@ -164,21 +166,23 @@ public:
         writeBytes((const uint8_t*)&object, sizeof(T));
     }
 
-    void writeStringLength(uint16_t);
+    void writeStringLength(uint16_t length);
 
-    void write(const std::string&);
+    void write(const std::string& str);
 
-    void write(const std::wstring&);
+    void write(const std::wstring& str);
 
     /**
-    Write to buffer a float value within a min-max range as an integer value within a 0-max range.
-    @param data the float to write to buffer
+    Write to buffer a double value within a min-max float range as a value in a 0-[max] integer range.
+    @param data the double to write to buffer
     @param numBits the number of bits to be occupied in the buffer, the max converted integer value
     @param max the maximum float value
     @param min the minimum float value, defaulting to 0.0f
+    @param epsilon a comparable tolerable difference between decimal numbers, defaulting to 0.001
     @throw invalid_argument if min is greater than max
+    @throw invalid_argument if the number of bits is zero
     */
-    void writeQuantitizedFloat(const float&, const size_t, const float, const float = 0.0f);
+    void writeQuantitizedDouble(const double& data, size_t numBits, float max, float min = 0.0f, double epsilon = 0.001);
 
     std::vector<uint8_t>& buf;
 

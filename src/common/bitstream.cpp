@@ -18,20 +18,18 @@ size_t BitStream::getSizeBits() const {
 
 size_t BitStream::getRemainingBits() const {
     size_t sizeBits = getSizeBits();
-    if(streamBitPos >= sizeBits) {
+    if (streamBitPos >= sizeBits) {
         return 0;
-    }
-    else {
+    } else {
         return sizeBits - streamBitPos;
     }
 }
 
 size_t BitStream::getRemainingBytes() const {
     size_t usedBytes = BITS_TO_BYTES(streamBitPos);
-    if(usedBytes >= buf.size()) {
+    if (usedBytes >= buf.size()) {
         return 0;
-    }
-    else {
+    } else {
         return buf.size() - usedBytes;
     }
 }
@@ -53,7 +51,7 @@ size_t BitStream::getPos() const {
 }
 
 void BitStream::setPos(size_t pos) {
-    if(pos > buf.size() * 8) {
+    if (pos > buf.size() * 8) {
         lastError = Error::INVALID_STREAM_POS;
         return;
     }
@@ -65,7 +63,7 @@ void BitStream::deltaPos(int32_t delta) {
     // TODO: Signedness is funky here. Figure out a better way.
     int32_t newPos = (int32_t)streamBitPos + delta;
 
-    if(newPos < 0 || newPos > buf.size() * 8) {
+    if (newPos < 0 || newPos > buf.size() * 8) {
         lastError = Error::INVALID_STREAM_POS;
         return;
     }
@@ -75,7 +73,7 @@ void BitStream::deltaPos(int32_t delta) {
 
 void BitStream::alignPos() {
     size_t bitsIn = (streamBitPos % 8);
-    if(bitsIn != 0) {
+    if (bitsIn != 0) {
         deltaPos(8 - bitsIn);
     }
 }
@@ -85,32 +83,32 @@ BitStream::Error BitStream::getLastError() {
 }
 
 void BitStream::readBytes(uint8_t* outBuf, size_t numBytes, bool peek) {
-    if(numBytes == 0) {
+    if (numBytes == 0) {
         return;
     }
 
     // If the stream position is not aligned on a byte boundary, need to do bit reading
-    if((streamBitPos & 0x7) != 0) {
+    if ((streamBitPos & 0x7) != 0) {
         readBits(outBuf, numBytes * 8, peek);
         return;
     }
 
     size_t remainingBytes = getRemainingBytes();
-    if(remainingBytes < numBytes) {
+    if (remainingBytes < numBytes) {
         lastError = Error::READ_TOO_MUCH;
         return;
     }
 
     memcpy(outBuf, getHeadBytePtr(), numBytes);
 
-    if(!peek) {
+    if (!peek) {
         streamBitPos += numBytes * 8;
     }
 }
 
 bool BitStream::readBit(bool peek) {
     size_t remainingBits = getRemainingBits();
-    if(remainingBits < 1) {
+    if (remainingBits < 1) {
         lastError = Error::READ_TOO_MUCH;
         return false;
     }
@@ -124,18 +122,18 @@ bool BitStream::readBit(bool peek) {
 
 void BitStream::readBits(uint8_t* outBuf, size_t numBits, bool peek) {
     //NOTE: WILL CLOBBER any existing data in the bytes that get written to
-    if(numBits == 0) {
+    if (numBits == 0) {
         return;
     }
 
     // If the stream position is aligned on a byte boundary and we are reading a quantity of bits divisble by 8, we can use faster byte reading
-    if((streamBitPos & 0x7) == 0 && (numBits & 0x7) == 0) {
+    if ((streamBitPos & 0x7) == 0 && (numBits & 0x7) == 0) {
         readBytes(outBuf, numBits / 8, peek);
         return;
     }
 
     size_t remainingBits = getRemainingBits();
-    if(remainingBits < numBits) {
+    if (remainingBits < numBits) {
         lastError = Error::READ_TOO_MUCH;
         return;
     }
@@ -146,20 +144,19 @@ void BitStream::readBits(uint8_t* outBuf, size_t numBits, bool peek) {
 
     size_t bitsToRead = numBits;
 
-    while(true) {
+    while (true) {
         size_t byteOffset = streamBitPos / 8;
         size_t bitOffset = (streamBitPos & 0x7);
         size_t bitsLeft = 8 - bitOffset;
 
-        if(bitsLeft >= bitsToRead) {
+        if (bitsLeft >= bitsToRead) {
             // We have enough bits remaining in the current source byte to finish the read, so read them all into the current destination byte
             // Shift the remaining bits right to be flush with the start of the current destination byte, and mask out the bits to the left
             size_t bitGap = (bitsLeft - bitsToRead);
             *outBuf = ((srcPtr[byteOffset] >> bitGap) & ((1 << bitsToRead) - 1));
             streamBitPos += bitsToRead;
             break;
-        }
-        else {
+        } else {
             // We don't have enough bits remaining in the current byte to finish the read, so read as much as we need into the current destination byte
             // Shift the current source byte left to reserve a number of bits on the right to read from the next byte, and mask out the bits to the left
             size_t bitsToWriteToSrc = std::min(bitsToRead, (size_t)8);
@@ -173,7 +170,7 @@ void BitStream::readBits(uint8_t* outBuf, size_t numBits, bool peek) {
             streamBitPos += bitsToWriteToSrc;
             bitsToRead -= bitsToWriteToSrc;
 
-            if(bitsToRead == 0) {
+            if (bitsToRead == 0) {
                 break;
             }
 
@@ -181,25 +178,25 @@ void BitStream::readBits(uint8_t* outBuf, size_t numBits, bool peek) {
         }
     }
 
-    if(peek) {
+    if (peek) {
         streamBitPos = prevStreamBitPos;
     }
 }
 
 void BitStream::writeBytes(const uint8_t* data, size_t numBytes) {
-    if(numBytes == 0) {
+    if (numBytes == 0) {
         return;
     }
 
     // If the stream position is not aligned on a byte boundary, need to do bit writing
-    if((streamBitPos & 0x7) != 0) {
+    if ((streamBitPos & 0x7) != 0) {
         writeBits(data, numBytes * 8);
         return;
     }
 
     // Reserve space for the number of bytes we're going to write
     size_t remainingBytes = getRemainingBytes();
-    if(remainingBytes < numBytes) {
+    if (remainingBytes < numBytes) {
         buf.resize(buf.size() + numBytes - remainingBytes);
     }
 
@@ -210,14 +207,13 @@ void BitStream::writeBytes(const uint8_t* data, size_t numBytes) {
 
 void BitStream::writeBit(bool value) {
     size_t remainingBits = getRemainingBits();
-    if(remainingBits < 1) {
+    if (remainingBits < 1) {
         buf.resize(buf.size() + 1);
     }
 
-    if(value) {
+    if (value) {
         *getHeadBytePtr() |= (0x80 >> (streamBitPos & 0x7));
-    }
-    else {
+    } else {
         *getHeadBytePtr() &= ~(0x80 >> (streamBitPos & 0x7));
     }
 
@@ -225,19 +221,19 @@ void BitStream::writeBit(bool value) {
 }
 
 void BitStream::writeBits(const uint8_t* data, size_t numBits) {
-    if(numBits == 0) {
+    if (numBits == 0) {
         return;
     }
 
     // If the stream position is aligned on a byte boundary and we are writing a quantity of bits divisble by 8, we can use faster byte writing
-    if((streamBitPos & 0x7) == 0 && (numBits & 0x7) == 0) {
+    if ((streamBitPos & 0x7) == 0 && (numBits & 0x7) == 0) {
         writeBytes(data, numBits / 8);
         return;
     }
 
     // Reserve space for the number of bits we're going to write
     size_t remainingBits = getRemainingBits();
-    if(remainingBits < numBits) {
+    if (remainingBits < numBits) {
         buf.resize(BITS_TO_BYTES(buf.size() * 8 + numBits - remainingBits));
     }
 
@@ -245,20 +241,19 @@ void BitStream::writeBits(const uint8_t* data, size_t numBits) {
 
     size_t bitsToWrite = numBits;
 
-    while(true) {
+    while (true) {
         size_t byteOffset = streamBitPos / 8;
         size_t bitOffset = (streamBitPos & 0x7);
         size_t bitsLeft = 8 - bitOffset;
 
-        if(bitsLeft >= bitsToWrite) {
+        if (bitsLeft >= bitsToWrite) {
             // We have enough room in the current byte to fit all of the rest of the bits, so write them all from the current source byte
             // Shift the remaining bits left to close the gap and be flush with the end of the stream
             size_t bitGap = (bitsLeft - bitsToWrite);
             dstPtr[byteOffset] |= (*data << bitGap);
             streamBitPos += bitsToWrite;
             break;
-        }
-        else {
+        } else {
             // We don't have enough room for all of the remaining bits, so write as much as we need to from the current source byte
             // Shift the current byte right to un-overlap the bits and be flush with the end of the stream
             size_t bitsToWriteFromSrc = std::min(bitsToWrite, (size_t)8);
@@ -272,7 +267,7 @@ void BitStream::writeBits(const uint8_t* data, size_t numBits) {
             streamBitPos += bitsToWriteFromSrc;
             bitsToWrite -= bitsToWriteFromSrc;
 
-            if(bitsToWrite == 0) {
+            if (bitsToWrite == 0) {
                 break;
             }
 
@@ -284,10 +279,9 @@ void BitStream::writeBits(const uint8_t* data, size_t numBits) {
 uint16_t BitStream::readStringLength() {
     uint16_t strLen = 0;
     readBits((uint8_t*)&strLen, 8);
-    if((strLen & 0x80) != 0) {
+    if ((strLen & 0x80) != 0) {
         strLen &= 0x7F;
-    }
-    else {
+    } else {
         // NOTE: Swapped byte ordering
         strLen = (strLen << 8);
         readBits((uint8_t*)&strLen, 8);
@@ -314,24 +308,24 @@ void BitStream::read(std::wstring& str) {
     readBytes((uint8_t*)str.data(), strLen * 2);
 }
 
-void BitStream::readQuantitizedFloat(float& data, const size_t numBits, const float max, const float min) {
-    int epsilon = 100;
-    float range = max - min;
-    if(compareFloats(range, 0.0f, epsilon) < 0) {
-        throw std::invalid_argument("quantitized float range - min value is greater than max value");
+void BitStream::readQuantitizedDouble(double& data, size_t numBits, float max, float min, double epsilon) {
+    double range = static_cast<double>(max - min);
+    if (range + epsilon < 0.0) {
+        throw std::invalid_argument("quantitized double range - min value is greater than max value");
     }
-    long outBuf = 0L;
+    else if (numBits == 0) {
+        throw std::invalid_argument("quantitized double size - no bits, no value");
+    }
+    uint64_t outBuf = 0L;
     readBits((uint8_t*)&outBuf, numBits);
-    if(compareFloats(range, 0.0f, epsilon) == 0 || outBuf == 0L) {
+    if (range < epsilon || outBuf == 0L) {
         data = min;
-    }
-    else {
-        long fieldMax = (1 << numBits) - 1;
+    } else {
+        uint64_t fieldMax = (1 << numBits) - 1;
         data = outBuf * range / fieldMax;
-        if(compareFloats(data, 0.0f, epsilon) < 0) {
-            data = 0.0f;
-        }
-        else if(compareFloats(data, range, epsilon) > 0) {
+        if (data + epsilon < 0.0) {
+            data = 0.0;
+        } else if (data + epsilon > range) {
             data = range;
         }
         data += min;
@@ -339,11 +333,10 @@ void BitStream::readQuantitizedFloat(float& data, const size_t numBits, const fl
 }
 
 void BitStream::writeStringLength(uint16_t length) {
-    if(length < 128) {
+    if (length < 128) {
         uint8_t strLenWithFlag = 0x80 | length;
         writeBytes((uint8_t*)&strLenWithFlag, 1);
-    }
-    else {
+    } else {
         // NOTE: Swapped byte ordering
         writeBytes(((uint8_t*)&length) + 1, 1);
         writeBytes((uint8_t*)&length, 1);
@@ -368,23 +361,20 @@ void BitStream::write(const std::wstring& str) {
     writeBytes((uint8_t*)str.data(), strLen * 2);
 }
 
-void BitStream::writeQuantitizedFloat(const float& data, const size_t numBits, const float max, const float min) {
-    int epsilon = 100;
-    float range = max - min;
-    long inBuf;
-    if(compareFloats(range, 0.0f, epsilon) < 0) {
-        throw std::invalid_argument("quantitized float range - min value is greater than max value");
-    }
-    else if(compareFloats(range, 0.0f, epsilon) == 0 || compareFloats(data, min, epsilon) <= 0) {
+void BitStream::writeQuantitizedDouble(const double& data, size_t numBits, float max, float min, double epsilon) {
+    double range = static_cast<double>(max - min);
+    uint64_t inBuf;
+    if (range + epsilon < 0.0) {
+        throw std::invalid_argument("quantitized double range - min value is greater than max value");
+    } else if (numBits == 0) {
+        throw std::invalid_argument("quantitized double size - no bits, no value");
+    } else
+    if (std::fabs(range) < epsilon || data + epsilon <= min) {
         inBuf = 0L;
-    }
-    else {
-        long fieldMax = (1 << numBits) - 1;
-        inBuf = static_cast<long>((data - min) * fieldMax / range);
-        if(inBuf < 0L) {
-            inBuf = 0L;
-        }
-        else if(inBuf > fieldMax) {
+    } else {
+        uint64_t fieldMax = (1 << numBits) - 1;
+        inBuf = static_cast<uint64_t>(((data - min) * fieldMax / range));
+        if (inBuf > fieldMax) {
             inBuf = fieldMax;
         }
     }
