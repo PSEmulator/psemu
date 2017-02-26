@@ -1,6 +1,8 @@
+#include <iostream>
 #include "bitstream.h"
 #include "log.h"
 #include "test.h"
+#include "util.h"
 
 class PlanetsideBitstream {
 public:
@@ -119,6 +121,117 @@ void testBitstreamReadBits() {
     }
 }
 
+void testBitstreamReadQuantitizedFloat() {
+    static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+        0x6C, 0x2D, 0x76, 0x55, 0x35, 0xCA, 0x16 //6C2D7 65535 CA16
+    });
+    BitStream bitstream(expectedBuf);
+
+    double x;
+    double y;
+    double z;
+    bitstream.readQuantitizedDouble(x, 20, 8192.0);
+    bitstream.readQuantitizedDouble(y, 20, 8192.0);
+    bitstream.readQuantitizedDouble(z, 16, 1024.0);
+    assertEqual(compareDecimals(x, 3674.85, 0.01), 0);
+    assertEqual(compareDecimals(y, 2726.7917, 0.01), 0);
+    assertEqual(compareDecimals(z, 91.1581, 0.01), 0);
+}
+
+void testBitstreamWriteQuantitizedFloat() {
+    static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+        0x6C, 0x2D, 0x76, 0x55, 0x35, 0xCA, 0x16 //6C2D7 65535 CA16
+    });
+    BitStream expected_bitstream(expectedBuf);
+
+    double a = 3674.85;
+    double b = 2726.7917;
+    double c = 91.1581;
+    std::vector<uint8_t> bitstreamBuf;
+    BitStream test_bitstream(bitstreamBuf);
+    test_bitstream.writeQuantitizedDouble(a, 20, 8192.0);
+    test_bitstream.writeQuantitizedDouble(b, 20, 8192.0);
+    test_bitstream.writeQuantitizedDouble(c, 16, 1024.0);
+    assertBuffersEqual(bitstreamBuf, expectedBuf);
+}
+
+void testBitstreamReadQuantitizedFloatLimits() {
+    static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+        0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF //FFFF 0000 FFFF
+    });
+    BitStream bitstream(expectedBuf);
+
+    double a;
+    double b;
+    double c;
+    bitstream.readQuantitizedDouble(a, 16, 256.0, -256.0);
+    bitstream.readQuantitizedDouble(b, 16, 256.0, -256.0);
+    bitstream.readQuantitizedDouble(c, 16, 256.0, -256.0);
+    assertEqual(compareDecimals(a, 256.0, 0.01), 0);
+    assertEqual(compareDecimals(b, -256.0, 0.01), 0);
+    assertEqual(compareDecimals(c, 256.0, 0.01), 0);
+}
+
+void testBitstreamWriteQuantitizedFloatLimits() {
+    static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+        0xFF, 0xFF, 0x00, 0x00, 0xFF, 0xFF //FFFF 0000 FFFF
+    });
+    BitStream test_bitstream(expectedBuf);
+
+    double a = 260.5; //too high for 256.0
+    double b = -260.5; //too low for -256.0
+    std::vector<uint8_t> bitstreamBuf;
+    BitStream bitstream(bitstreamBuf);
+    bitstream.writeQuantitizedDouble(a, 16, 256.0, -256.0);
+    bitstream.writeQuantitizedDouble(b, 16, 256.0, -256.0);
+    bitstream.writeQuantitizedDouble(a, 16, 256.0, -256.0);
+    assertBuffersEqual(bitstreamBuf, expectedBuf); //confirms limiting
+}
+
+void testBitStreamWriteAndReadBackQuantitizedFloats() {
+    double a = 3674.85;
+    double b = 2726.79;
+    double c = 91.1421;
+
+    std::vector<uint8_t> bitstreamBuf;
+    BitStream bitstream(bitstreamBuf);
+    bitstream.writeQuantitizedDouble(a, 20, 8192.0);
+    bitstream.writeQuantitizedDouble(b, 20, 8192.0);
+    bitstream.writeQuantitizedDouble(c, 16, 1024.0);
+
+    bitstream.setPos(0); //rewind the stream
+    double ax;
+    double bx;
+    double cx;
+    bitstream.readQuantitizedDouble(ax, 20, 8192.0);
+    bitstream.readQuantitizedDouble(bx, 20, 8192.0);
+    bitstream.readQuantitizedDouble(cx, 16, 1024.0);
+    assertEqual(compareDecimals(ax, a, 0.01), 0);
+    assertEqual(compareDecimals(bx, b, 0.01), 0);
+    assertEqual(compareDecimals(cx, c, 0.01), 0);
+}
+
+void testBitStreamReadAndWriteQuantitizedFloats() {
+    static std::vector<uint8_t> expectedBuf = std::vector<uint8_t>({
+        0x6C, 0x2D, 0x76, 0x55, 0x35, 0xCA, 0x16 //6C2D7 65535 CA16
+    });
+    BitStream test_bitstream(expectedBuf);
+
+    double a;
+    double b;
+    double c;
+    test_bitstream.readQuantitizedDouble(a, 20, 8192.0);
+    test_bitstream.readQuantitizedDouble(b, 20, 8192.0);
+    test_bitstream.readQuantitizedDouble(c, 16, 1024.0);
+
+    std::vector<uint8_t> bitstreamBuf;
+    BitStream bitstream(bitstreamBuf);
+    bitstream.writeQuantitizedDouble(a, 20, 8192.0);
+    bitstream.writeQuantitizedDouble(b, 20, 8192.0);
+    bitstream.writeQuantitizedDouble(c, 16, 1024.0);
+    assertBuffersEqual(bitstreamBuf, expectedBuf);
+}
+
 void testBitstream() {
     testBitstreamWriteBitsBasic();
     testBitstreamWriteBits();
@@ -128,4 +241,11 @@ void testBitstream() {
     // TODO: Test mixed bits and bytes write/read
     // TODO: Test primitive write/read
     // TODO: Test string write/read
+
+    testBitstreamReadQuantitizedFloat();
+    testBitstreamWriteQuantitizedFloat();
+    testBitstreamReadQuantitizedFloatLimits();
+    testBitstreamWriteQuantitizedFloatLimits();
+    testBitStreamWriteAndReadBackQuantitizedFloats();
+    testBitStreamReadAndWriteQuantitizedFloats();
 }

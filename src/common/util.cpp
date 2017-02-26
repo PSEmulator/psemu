@@ -1,8 +1,5 @@
-#include <chrono>
 #include <random>
-#include <string>
 #include <thread>
-#include "bitstream.h"
 #include "util.h"
 
 uint32_t randomUnsignedInt() {
@@ -78,4 +75,24 @@ std::vector<uint8_t> hexToBytes(std::string hexStr) {
     }
 
     return bytes;
+}
+
+/**
+Basic double comparison test using std::fabs.
+May be repurposed for other numeric data types cautiously.
+Models return values after Java Comparator's compare(T o1, T o2).
+@param a the first number
+@param b the second number
+@param epsilon the minimal tolerable difference between a and b before they are no longer considered equal
+@return a negative integer, zero, or a positive integer as the first argument is <, ==, or > the second
+*/
+int compareDecimals(double a, double b, double epsilon) {
+    double epsilonFabs = std::fabs(epsilon);
+    if (std::fabs(a - b) < epsilonFabs) {
+        return 0;
+    } else if (a + epsilonFabs < b) {
+        return -1;
+    } else {
+        return 1;
+    }
 }
